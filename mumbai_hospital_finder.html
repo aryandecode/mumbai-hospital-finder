@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mumbai Hospital & Clinic Finder</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 28px 18px 50px;
+    }
+    h1 { margin-bottom: 8px; }
+    .subtitle { color: #6b7280; margin-top: 0; }
+    .controls {
+      background: white;
+      padding: 18px;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      margin: 20px 0;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    input, select, button {
+      font-size: 16px;
+      padding: 12px 14px;
+      border-radius: 9px;
+      border: 1px solid #d1d5db;
+    }
+    input { flex: 1; min-width: 240px; }
+    select { min-width: 150px; background: white; }
+    button {
+      border: 0;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { opacity: .9; }
+    #status { margin-top: 12px; color: #6b7280; }
+    .card {
+      background: white;
+      padding: 18px;
+      border-radius: 14px;
+      margin: 12px 0;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 19px;
+    }
+    .line { margin: 7px 0; }
+    .actions {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .actions a {
+      display: inline-block;
+      text-decoration: none;
+      background: #eef2ff;
+      color: #1d4ed8;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .error {
+      background: #fff1f2;
+      color: #be123c;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 12px;
+    }
+    .empty { color: #6b7280; padding: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏥 Mumbai Hospital & Clinic Finder</h1>
+    <p class="subtitle">Find hospitals and clinics in Mumbai using Google Places.</p>
+
+    <div class="controls">
+      <div class="row">
+        <select id="type">
+          <option value="hospital">Hospitals</option>
+          <option value="medical_clinic">Clinics</option>
+        </select>
+
+        <input id="area" type="text"
+               placeholder="Area, e.g. Andheri, Bandra, Powai"
+               value="Mumbai">
+
+        <button onclick="searchPlaces()">Search</button>
+      </div>
+      <div id="status">Ready to search.</div>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <script>
+    // ==========================================================
+    // STEP 1: Replace the text below with YOUR Google API key.
+    // Keep the quotes around the key.
+    // ==========================================================
+    const API_KEY = "PASTE_YOUR_GOOGLE_API_KEY_HERE";
+
+    // Load Google Maps JavaScript API dynamically.
+    (g => {
+      var h, a, k, p = "The Google Maps JavaScript API",
+          c = "google", l = "importLibrary", q = "__ib__",
+          m = document, b = window;
+      b = b[c] || (b[c] = {});
+      var d = b.maps || (b.maps = {}), r = new Set, e = new URLSearchParams,
+          u = () => h || (h = new Promise(async (f, n) => {
+            await (a = m.createElement("script"));
+            e.set("libraries", [...r] + "");
+            for (k in g)
+              e.set(k.replace(/[A-Z]/g, t => "_" + t[0].toLowerCase()), g[k]);
+            e.set("callback", c + ".maps." + q);
+            a.src = `https://maps.${c}apis.com/maps/api/js?` + e;
+            d[q] = f;
+            a.onerror = () => h = n(Error(p + " could not load."));
+            a.nonce = m.querySelector("script[nonce]")?.nonce || "";
+            m.head.append(a);
+          }));
+      d[l] ? console.warn(p + " only loads once. Ignoring:", g)
+           : d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n));
+    })({
+      key: API_KEY,
+      v: "weekly"
+    });
+
+    async function searchPlaces() {
+      const area = document.getElementById("area").value.trim() || "Mumbai";
+      const type = document.getElementById("type").value;
+      const status = document.getElementById("status");
+      const results = document.getElementById("results");
+
+      if (API_KEY === "PASTE_YOUR_GOOGLE_API_KEY_HERE") {
+        status.innerHTML = "";
+        results.innerHTML =
+          '<div class="error"><strong>API key missing.</strong><br>' +
+          'Open this HTML file in a text editor and replace ' +
+          '<code>PASTE_YOUR_GOOGLE_API_KEY_HERE</code> with your Google API key.</div>';
+        return;
+      }
+
+      status.textContent = "Searching Google Places...";
+      results.innerHTML = "";
+
+      try {
+        const { Place } = await google.maps.importLibrary("places");
+
+        const request = {
+          textQuery: `${type === "hospital" ? "hospitals" : "clinics"} in ${area}, Mumbai, Maharashtra, India`,
+          fields: [
+            "displayName",
+            "formattedAddress",
+            "nationalPhoneNumber",
+            "internationalPhoneNumber",
+            "websiteURI",
+            "googleMapsURI",
+            "location"
+          ],
+          maxResultCount: 20
+        };
+
+        const { places } = await Place.searchByText(request);
+
+        if (!places || places.length === 0) {
+          status.textContent = "No results found.";
+          results.innerHTML = '<div class="empty">Try another Mumbai area.</div>';
+          return;
+        }
+
+        status.textContent = `Found ${places.length} result(s).`;
+
+        places.forEach(place => {
+          const name = place.displayName || "Unnamed place";
+          const address = place.formattedAddress || "Address not available";
+          const phone = place.nationalPhoneNumber ||
+                        place.internationalPhoneNumber ||
+                        "Phone number not available";
+
+          const card = document.createElement("div");
+          card.className = "card";
+
+          card.innerHTML = `
+            <h2>🏥 ${escapeHtml(name)}</h2>
+            <div class="line">📍 ${escapeHtml(address)}</div>
+            <div class="line">☎️ ${escapeHtml(phone)}</div>
+            <div class="actions">
+              ${place.googleMapsURI
+                ? `<a href="${place.googleMapsURI}" target="_blank" rel="noopener">🗺️ Google Maps</a>`
+                : ""}
+              ${place.websiteURI
+                ? `<a href="${place.websiteURI}" target="_blank" rel="noopener">🌐 Website</a>`
+                : ""}
+            </div>
+          `;
+
+          results.appendChild(card);
+        });
+
+      } catch (error) {
+        console.error(error);
+        status.textContent = "Something went wrong.";
+        results.innerHTML =
+          '<div class="error"><strong>Google Places error</strong><br>' +
+          escapeHtml(error.message || String(error)) +
+          '<br><br>Check that Maps JavaScript API and Places API (New) are enabled, ' +
+          'and that your API key allows both APIs.</div>';
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
