@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mumbai Hospital & Clinic Finder</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f5f7fb;color:#1f2937}
+.container{max-width:1050px;margin:auto;padding:24px 16px 50px}
+h1{margin:0 0 8px}.subtitle{color:#6b7280;margin:0 0 18px}
+.controls{background:#fff;padding:18px;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+input,select,button{font-size:16px;padding:12px 14px;border-radius:9px;border:1px solid #d1d5db}
+input{flex:1;min-width:230px}select{min-width:150px;background:#fff}
+button{border:0;background:#2563eb;color:#fff;font-weight:600;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+.green{background:#15803d}.download{background:#15803d}
+.keyrow{margin-bottom:12px}.keyinput{width:100%;flex:1}
+.status{margin-top:12px;color:#6b7280}.note{font-size:13px;color:#6b7280;margin-top:10px;line-height:1.45}
+.card{background:#fff;padding:18px;border-radius:14px;margin:12px 0;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.card h2{margin:0 0 8px;font-size:19px}.line{margin:7px 0;line-height:1.4}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.actions a{text-decoration:none;background:#eef2ff;color:#1d4ed8;padding:9px 12px;border-radius:8px;font-weight:600}
+.error{background:#fff1f2;color:#be123c;padding:14px;border-radius:10px;margin-top:12px}.empty{color:#6b7280;padding:20px 0}
+#progress{margin-top:8px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🏥 Mumbai Hospital & Clinic Finder</h1>
+<p class="subtitle">Search hospitals and clinics across Mumbai and download the results as an Excel file.</p>
+
+<div class="controls">
+  <div class="keyrow row">
+    <input id="apiKey" class="keyinput" type="password" placeholder="Paste your Google API key here">
+    <button id="connectButton" class="green" onclick="connectGoogle()">Connect Google API</button>
+  </div>
+
+  <div class="row">
+    <select id="type">
+      <option value="hospital">Hospitals</option>
+      <option value="medical_clinic">Clinics</option>
+    </select>
+    <input id="area" type="text" value="Mumbai" placeholder="Area, e.g. Andheri, Bandra, Powai">
+    <button id="searchButton" onclick="startSearch()">Search</button>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <button id="allMumbaiButton" onclick="searchAllMumbai()">🔎 Search Broadly Across Mumbai</button>
+    <button id="downloadButton" class="download" onclick="downloadExcel()" disabled>📥 Download Excel</button>
+  </div>
+
+  <div id="status" class="status">Enter your Google API key and tap Connect Google API.</div>
+  <div id="progress"></div>
+  <div class="note">
+    Your API key is entered in this browser rather than stored in this HTML file.
+    Google Places does not guarantee an exhaustive directory; the Excel file contains places returned for the searches.
+  </div>
+</div>
+<div id="results"></div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+let googleReady = false;
+let allPlaces = [];
+
+const zones = [
+  "Colaba Mumbai","Churchgate Mumbai","Marine Lines Mumbai","Fort Mumbai",
+  "Cuffe Parade Mumbai","Worli Mumbai","Prabhadevi Mumbai","Lower Parel Mumbai",
+  "Mahalaxmi Mumbai","Tardeo Mumbai","Grant Road Mumbai","Byculla Mumbai",
+  "Mazgaon Mumbai","Parel Mumbai","Dadar West Mumbai","Dadar East Mumbai",
+  "Matunga West Mumbai","Matunga East Mumbai","Sion Mumbai","Wadala Mumbai",
+  "Mahim Mumbai","Bandra West Mumbai","Bandra East Mumbai","Khar West Mumbai",
+  "Santacruz West Mumbai","Santacruz East Mumbai","Vile Parle West Mumbai",
+  "Vile Parle East Mumbai","Andheri West Mumbai","Andheri East Mumbai",
+  "Jogeshwari West Mumbai","Jogeshwari East Mumbai","Goregaon West Mumbai",
+  "Goregaon East Mumbai","Malad West Mumbai","Malad East Mumbai",
+  "Kandivali West Mumbai","Kandivali East Mumbai","Borivali West Mumbai",
+  "Borivali East Mumbai","Dahisar West Mumbai","Dahisar East Mumbai",
+  "Bhandup West Mumbai","Bhandup East Mumbai","Mulund West Mumbai",
+  "Mulund East Mumbai","Vikhroli West Mumbai","Vikhroli East Mumbai",
+  "Ghatkopar West Mumbai","Ghatkopar East Mumbai","Kurla West Mumbai",
+  "Kurla East Mumbai","Chembur Mumbai","Govandi Mumbai","Mankhurd Mumbai",
+  "Powai Mumbai","Chandivali Mumbai","Vidyavihar Mumbai","Mira Road Mumbai",
+  "Bhayandar Mumbai"
+];
+
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("mumbaiFinderApiKey");
+  if (saved) document.getElementById("apiKey").value = saved;
+});
+
+function connectGoogle(){
+  const key = document.getElementById("apiKey").value.trim();
+  if(!key){
+    showError("Please paste your Google API key first.");
+    return;
+  }
+
+  localStorage.setItem("mumbaiFinderApiKey", key);
+  document.getElementById("status").textContent = "Connecting to Google Maps...";
+  document.getElementById("connectButton").disabled = true;
+
+  if(window.google && window.google.maps){
+    googleReady = true;
+    document.getElementById("status").textContent = "Google API connected. Ready to search.";
+    document.getElementById("connectButton").disabled = false;
+    return;
+  }
+
+  window.__mumbaiGoogleReady = () => {
+    googleReady = true;
+    document.getElementById("status").textContent = "Google API connected. Ready to search.";
+    document.getElementById("connectButton").disabled = false;
+  };
+
+  const script = document.createElement("script");
+  script.src = "https://maps.googleapis.com/maps/api/js?key=" +
+    encodeURIComponent(key) + "&v=weekly&callback=__mumbaiGoogleReady";
+  script.async = true;
+  script.defer = true;
+  script.onerror = () => {
+    document.getElementById("connectButton").disabled = false;
+    showError("Google Maps could not load. Check that the API key is valid and allows Maps JavaScript API.");
+  };
+  document.head.appendChild(script);
+}
+
+function typeWord(){
+  return document.getElementById("type").value === "hospital" ? "hospitals" : "clinics";
+}
+function includedType(){
+  return document.getElementById("type").value;
+}
+function ensureReady(){
+  if(!googleReady){
+    showError("Please enter your Google API key and tap Connect Google API first.");
+    return false;
+  }
+  return true;
+}
+async function runQuery(textQuery){
+  const {Place} = await google.maps.importLibrary("places");
+  const request = {
+    textQuery,
+    includedType: includedType(),
+    fields:[
+      "id","displayName","formattedAddress","nationalPhoneNumber",
+      "internationalPhoneNumber","websiteURI","googleMapsURI","location"
+    ],
+    maxResultCount:20,
+    language:"en",
+    region:"IN"
+  };
+  const response = await Place.searchByText(request);
+  return response.places || [];
+}
+function placeKey(p){
+  return p.id || `${p.displayName||""}|${p.formattedAddress||""}`.toLowerCase();
+}
+function addUnique(places){
+  const seen = new Set(allPlaces.map(placeKey));
+  for(const p of places){
+    const k=placeKey(p);
+    if(!seen.has(k)){seen.add(k);allPlaces.push(p);}
+  }
+}
+async function startSearch(){
+  if(!ensureReady()) return;
+  const area=document.getElementById("area").value.trim()||"Mumbai";
+  const sb=document.getElementById("searchButton");
+  const ab=document.getElementById("allMumbaiButton");
+  allPlaces=[]; document.getElementById("results").innerHTML="";
+  document.getElementById("downloadButton").disabled=true;
+  sb.disabled=true;ab.disabled=true;
+  try{
+    const queries=[
+      `${typeWord()} in ${area}, Mumbai, Maharashtra, India`,
+      `multispeciality ${typeWord()} in ${area}, Mumbai, Maharashtra, India`,
+      `private and government ${typeWord()} in ${area}, Mumbai, Maharashtra, India`
+    ];
+    for(let i=0;i<queries.length;i++){
+      document.getElementById("status").textContent=`Searching ${i+1} of ${queries.length}...`;
+      addUnique(await runQuery(queries[i]));
+      document.getElementById("progress").textContent=`${allPlaces.length} unique results collected`;
+    }
+    renderResults();
+  }catch(e){showError(e.message||String(e))}
+  finally{sb.disabled=false;ab.disabled=false}
+}
+async function searchAllMumbai(){
+  if(!ensureReady()) return;
+  const sb=document.getElementById("searchButton");
+  const ab=document.getElementById("allMumbaiButton");
+  allPlaces=[];document.getElementById("results").innerHTML="";
+  document.getElementById("downloadButton").disabled=true;
+  sb.disabled=true;ab.disabled=true;
+  try{
+    for(let i=0;i<zones.length;i++){
+      document.getElementById("status").textContent=`Searching Mumbai zone ${i+1} of ${zones.length}...`;
+      document.getElementById("progress").textContent=zones[i];
+      const area = zones[i];
+      const searches = [
+        `${typeWord()} in ${area}, Maharashtra, India`,
+        `multispeciality hospitals in ${area}, Maharashtra, India`,
+        `private hospitals in ${area}, Maharashtra, India`,
+        `government hospitals in ${area}, Maharashtra, India`,
+        `medical clinics in ${area}, Maharashtra, India`
+      ];
+      for (const query of searches) addUnique(await runQuery(query));
+      document.getElementById("progress").textContent=`${zones[i]} complete — ${allPlaces.length} unique results collected`;
+    }
+    renderResults();
+  }catch(e){showError(e.message||String(e))}
+  finally{sb.disabled=false;ab.disabled=false}
+}
+function renderResults(){
+  const results=document.getElementById("results");
+  if(!allPlaces.length){
+    document.getElementById("status").textContent="No results found.";
+    results.innerHTML='<div class="empty">Try another area.</div>';return;
+  }
+  const label=typeWord().replace(/s$/,"");
+  document.getElementById("status").textContent=`Found ${allPlaces.length} unique ${label}${allPlaces.length===1?"":"s"}.`;
+  document.getElementById("downloadButton").disabled=false;
+  results.innerHTML="";
+  allPlaces.forEach((p,i)=>{
+    const name=p.displayName||"Unnamed place";
+    const address=p.formattedAddress||"Address not available";
+    const national=p.nationalPhoneNumber||"";
+    const international=p.internationalPhoneNumber||"";
+    const phone=national||international||"Phone number not available";
+    const card=document.createElement("div");card.className="card";
+    card.innerHTML=`
+      <h2>${i+1}. 🏥 ${escapeHtml(name)}</h2>
+      <div class="line">📍 ${escapeHtml(address)}</div>
+      <div class="line">☎️ ${escapeHtml(phone)}</div>
+      ${national&&international&&national!==international?`<div class="line">☎️ International: ${escapeHtml(international)}</div>`:""}
+      <div class="actions">
+        ${p.googleMapsURI?`<a href="${p.googleMapsURI}" target="_blank" rel="noopener">🗺️ Google Maps</a>`:""}
+        ${p.websiteURI?`<a href="${p.websiteURI}" target="_blank" rel="noopener">🌐 Website</a>`:""}
+      </div>`;
+    results.appendChild(card);
+  });
+}
+function downloadExcel(){
+  if(!allPlaces.length)return;
+  const rows=allPlaces.map((p,i)=>({
+    "No.":i+1,
+    "Hospital / Clinic Name":p.displayName||"",
+    "Address":p.formattedAddress||"",
+    "Phone Number":p.nationalPhoneNumber||"",
+    "International Phone Number":p.internationalPhoneNumber||"",
+    "Website":p.websiteURI||"",
+    "Google Maps":p.googleMapsURI||"",
+    "Latitude":p.location?.lat?.()??"",
+    "Longitude":p.location?.lng?.()??""
+  }));
+  const wb=XLSX.utils.book_new(),ws=XLSX.utils.json_to_sheet(rows);
+  ws["!cols"]=[{wch:8},{wch:42},{wch:75},{wch:22},{wch:25},{wch:55},{wch:60},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws,"Mumbai Places");
+  const typeName=document.getElementById("type").value==="hospital"?"hospitals":"clinics";
+  XLSX.writeFile(wb,`Mumbai_${typeName}_${new Date().toISOString().slice(0,10)}.xlsx`,{compression:true});
+}
+function showError(msg){
+  document.getElementById("status").textContent="Something went wrong.";
+  document.getElementById("results").innerHTML=`<div class="error"><strong>Google Places error</strong><br>${escapeHtml(msg)}</div>`;
+}
+function escapeHtml(v){
+  return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+</script>
+</body>
+</html>
