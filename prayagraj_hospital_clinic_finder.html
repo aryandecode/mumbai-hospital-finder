@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prayagraj Hospital & Clinic Finder</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#f4f7fb;color:#172033}
+header{background:#173b67;color:#fff;padding:22px 16px;text-align:center}header h1{margin:0 0 7px;font-size:27px}header p{margin:0;opacity:.9}
+.container{max-width:1200px;margin:auto;padding:16px}.panel{background:#fff;border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+label{font-weight:700;display:block;margin:9px 0 6px}input,select,button{width:100%;padding:12px;border:1px solid #ccd4df;border-radius:9px;font-size:16px}
+button{border:0;background:#1769aa;color:#fff;font-weight:700;cursor:pointer;margin-top:10px}button.secondary{background:#455a64}button.green{background:#18864b}button:disabled{opacity:.55;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.status{padding:11px;border-radius:9px;background:#eef4fa;margin-top:12px;white-space:pre-line}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.stat{background:#fff;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)}.stat b{display:block;font-size:24px}
+.toolbar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:14px}.card{background:#fff;border-radius:12px;padding:15px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card h3{margin:0 0 8px;color:#173b67}.meta{margin:5px 0;color:#4c5664}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions a{padding:9px 11px;border-radius:8px;background:#e9f2fb;color:#145a92;text-decoration:none;font-weight:700}
+.notice{font-size:13px;line-height:1.45;color:#5d6672}@media(max-width:700px){.grid,.toolbar,.stats{grid-template-columns:1fr}header h1{font-size:23px}}
+</style>
+</head>
+<body>
+<header><h1>🏥 Prayagraj Hospital & Clinic Finder</h1><p>Hospitals • Clinics • Medical Centers across Prayagraj</p></header>
+<div class="container">
+
+<div class="panel">
+<h2>1. Connect Google Places</h2>
+<p class="notice">Paste your Google API key here. It is stored only in this browser. Do not send your key to anyone.</p>
+<input id="apiKey" type="password" placeholder="Paste your Google API key here">
+<button id="connectBtn" onclick="connectGoogle()">Connect Google API</button>
+<div id="apiStatus" class="status">Not connected</div>
+</div>
+
+<div class="panel">
+<h2>2. Choose what to find</h2>
+<div class="grid">
+<div><label>Business type</label>
+<select id="category">
+<option value="hospital">Hospitals</option>
+<option value="medical_clinic">Clinics</option>
+<option value="both">Hospitals + Clinics</option>
+</select></div>
+<div><label>Area</label>
+<select id="area">
+<option value="ALL">All Prayagraj areas</option>
+<option>Civil Lines</option><option>George Town</option><option>Allahpur</option><option>Daraganj</option>
+<option>Mutthiganj</option><option>Naini</option><option>Jhunsi</option><option>Phaphamau</option>
+<option>Tagore Town</option><option>Katra</option><option>Chowk</option><option>Johnstonganj</option>
+<option>Leader Road</option><option>Zero Road</option><option>Stanley Road</option><option>MG Marg</option>
+<option>Lowther Road</option><option>Kamla Nehru Road</option><option>Thornhill Road</option><option>Elgin Road</option>
+<option>Allahabad University</option><option>Medical College area</option><option>SRN Hospital area</option>
+<option>Swaroop Rani Nehru Hospital area</option><option>Bai Ka Bagh</option><option>Beniganj</option>
+<option>Rajapur</option><option>Teliyarganj</option><option>Govindpur</option><option>Salori</option>
+<option>Rasulabad</option><option>Shivkuti</option><option>Daraganj</option><option>Alopi Bagh</option>
+<option>Kidwai Nagar</option><option>Kalindipuram</option><option>Dhoomanganj</option>
+<option>Bamrauli</option><option>Airport area</option><option>Transport Nagar</option><option>GT Road</option>
+<option>Andawa</option><option>Handia</option><option>Phulpur</option><option>Prayagraj Junction area</option>
+</select></div>
+</div>
+<label>Optional keyword</label>
+<input id="keyword" placeholder="Example: multispeciality, eye hospital, dental, children, maternity, government">
+<button id="searchBtn" onclick="searchPlaces()" disabled>🔎 Search Prayagraj</button>
+<button id="stopBtn" class="secondary" onclick="stopSearch()" disabled>Stop Search</button>
+<div id="searchStatus" class="status">Connect Google API first.</div>
+</div>
+
+<div class="stats">
+<div class="stat"><b id="totalCount">0</b>Total Results</div>
+<div class="stat"><b id="withPhone">0</b>With Phone</div>
+<div class="stat"><b id="withWebsite">0</b>With Website</div>
+<div class="stat"><b id="withEmail">0</b>Public Email</div>
+</div>
+
+<div class="panel">
+<h3>📊 Excel Tracking</h3>
+<div class="grid">
+<div><label>Export Version</label><input id="exportVersion" value="v1.0" placeholder="Example: v1.1"></div>
+<div><label>Tracking / Batch Name</label><input id="batchName" placeholder="Example: Prayagraj Hospitals - September 2026"></div>
+</div>
+<p class="notice">Each Excel export gets a unique Export ID, date/time, version, batch name and search details.</p>
+</div>
+
+<div class="panel">
+<div class="toolbar">
+<input id="filter" placeholder="Filter by name, area, address..." oninput="renderResults()">
+<select id="sort" onchange="renderResults()"><option value="name">Sort: Name</option><option value="rating">Sort: Rating</option><option value="reviews">Sort: Reviews</option></select>
+<button class="green" onclick="downloadExcel()">⬇ Download Excel</button>
+</div>
+<div id="results"></div>
+</div>
+
+<div class="panel"><h3>Important</h3><p class="notice">This app uses multiple geographic and category searches to improve coverage, but Google Places is not an exhaustive directory. Email is not a standard Google Places field, so the email column may be blank. Do not assume a blank field means the business has no email.</p></div>
+</div>
+
+<script>
+let googleReady=false,PlaceClass=null,allResults=[],searching=false,stopRequested=false;
+const areas=["Civil Lines","George Town","Allahpur","Daraganj","Mutthiganj","Naini","Jhunsi","Phaphamau","Tagore Town","Katra","Chowk","Johnstonganj","Leader Road","Zero Road","Stanley Road","MG Marg","Lowther Road","Kamla Nehru Road","Thornhill Road","Elgin Road","Allahabad University","Medical College area","SRN Hospital area","Swaroop Rani Nehru Hospital area","Bai Ka Bagh","Beniganj","Rajapur","Teliyarganj","Govindpur","Salori","Rasulabad","Shivkuti","Alopi Bagh","Kidwai Nagar","Kalindipuram","Dhoomanganj","Bamrauli","Airport area","Transport Nagar","GT Road","Andawa","Handia","Phulpur","Prayagraj Junction area"];
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+function loadKey(){const k=localStorage.getItem("prayagrajFinderApiKey");if(k)document.getElementById("apiKey").value=k;}
+function connectGoogle(){
+ const key=document.getElementById("apiKey").value.trim();if(!key){alert("Paste your Google API key first.");return;}
+ localStorage.setItem("prayagrajFinderApiKey",key);
+ document.getElementById("apiStatus").textContent="Connecting...";
+ document.getElementById("connectBtn").disabled=true;
+ window.__prayagrajGoogleReady=async function(){try{const lib=await google.maps.importLibrary("places");PlaceClass=lib.Place;googleReady=true;document.getElementById("apiStatus").textContent="✅ Google Places connected.";document.getElementById("searchBtn").disabled=false;}catch(e){document.getElementById("apiStatus").textContent="❌ Places library error: "+e.message;document.getElementById("connectBtn").disabled=false;}};
+ const old=document.getElementById("googleMapsScript");if(old)old.remove();
+ const s=document.createElement("script");s.id="googleMapsScript";s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(key)+"&v=weekly&callback=__prayagrajGoogleReady";s.async=true;s.defer=true;
+ s.onerror=()=>{document.getElementById("apiStatus").textContent="❌ Google API could not load. Check your key restrictions and enabled APIs.";document.getElementById("connectBtn").disabled=false;};
+ document.head.appendChild(s);
+}
+function stopSearch(){stopRequested=true;}
+function terms(){
+ const c=document.getElementById("category").value;
+ if(c==="hospital")return {types:["hospital"],terms:["hospitals","multispeciality hospitals","private hospitals","government hospitals","medical centers"]};
+ if(c==="medical_clinic")return {types:["medical_clinic"],terms:["clinics","medical clinics","specialist clinics","diagnostic clinics","medical centers"]};
+ return {types:["hospital","medical_clinic"],terms:["hospitals","clinics","multispeciality hospitals","medical centers","specialist clinics"]};
+}
+function addResult(p,area,q){
+ const name=p.displayName?.text||"",address=p.formattedAddress||"",key=p.id||(name+"|"+address).toLowerCase();
+ if(allResults.some(x=>x._key===key))return;
+ allResults.push({_key:key,id:p.id||"",area,name,address,phone:p.nationalPhoneNumber||"",internationalPhone:p.internationalPhoneNumber||"",website:p.websiteURI||"",maps:p.googleMapsURI||"",rating:p.rating??"",reviews:p.userRatingCount??"",businessStatus:p.businessStatus||"",types:(p.types||[]).join(", "),lat:p.location?.lat??"",lng:p.location?.lng??"",email:"",query:q,category:document.getElementById("category").selectedOptions[0].text});
+}
+async function runQuery(q,type){
+ const fields=["id","displayName","formattedAddress","nationalPhoneNumber","internationalPhoneNumber","websiteURI","googleMapsURI","location","rating","userRatingCount","businessStatus","types"];
+ try{const r={textQuery:q,fields,language:"en",region:"IN",maxResultCount:20};if(type)r.includedType=type;const out=await PlaceClass.searchByText(r);return out.places||[];}catch(e){console.warn(q,e);return[];}
+}
+async function searchPlaces(){
+ if(!googleReady){alert("Connect Google API first.");return;}if(searching)return;
+ searching=true;stopRequested=false;allResults=[];document.getElementById("searchBtn").disabled=true;document.getElementById("stopBtn").disabled=false;
+ const sel=document.getElementById("area").value, list=sel==="ALL"?areas:[sel], t=terms(), types=t.types, total=list.length*t.terms.length;let done=0;
+ document.getElementById("results").innerHTML="";
+ for(const area of list){if(stopRequested)break;for(const term of t.terms){if(stopRequested)break;
+   const q=document.getElementById("keyword").value.trim();const text=(q?q+" ":"")+term+" in "+area+", Uttar Pradesh, India";done++;
+   document.getElementById("searchStatus").textContent=`Searching ${area}...\n${done} of ${total} queries\nResults found: ${allResults.length}`;
+   for(const type of types){const places=await runQuery(text,type);for(const p of places)addResult(p,area,text);}
+   updateStats();renderResults();await new Promise(r=>setTimeout(r,80));
+ }}
+ searching=false;document.getElementById("searchBtn").disabled=false;document.getElementById("stopBtn").disabled=true;
+ document.getElementById("searchStatus").textContent=(stopRequested?"Search stopped.":"✅ Search complete.")+`\n${allResults.length} unique results found from ${done} query groups.`;
+}
+function updateStats(){document.getElementById("totalCount").textContent=allResults.length;document.getElementById("withPhone").textContent=allResults.filter(x=>x.phone||x.internationalPhone).length;document.getElementById("withWebsite").textContent=allResults.filter(x=>x.website).length;document.getElementById("withEmail").textContent=allResults.filter(x=>x.email).length;}
+function renderResults(){
+ const f=document.getElementById("filter").value.trim().toLowerCase();let a=allResults.filter(x=>!f||[x.name,x.address,x.area,x.phone].join(" ").toLowerCase().includes(f));const s=document.getElementById("sort").value;
+ a.sort((x,y)=>s==="rating"?(Number(y.rating)||0)-(Number(x.rating)||0):s==="reviews"?(Number(y.reviews)||0)-(Number(x.reviews)||0):x.name.localeCompare(y.name));
+ document.getElementById("results").innerHTML=a.length?a.map((x,i)=>`<div class="card"><h3>${i+1}. ${esc(x.name)}</h3><div class="meta">📍 ${esc(x.area)}</div><div class="meta">🏠 ${esc(x.address)}</div><div class="meta">📞 ${esc(x.phone||x.internationalPhone||"Not available")}</div><div class="meta">⭐ ${esc(x.rating||"N/A")} ${x.reviews?`(${esc(x.reviews)} reviews)`:""}</div><div class="meta">📧 ${esc(x.email||"Not found")}</div><div class="actions">${x.phone?`<a href="tel:${esc(x.phone)}">Call</a>`:""}${x.website?`<a href="${esc(x.website)}" target="_blank" rel="noopener">Website</a>`:""}${x.maps?`<a href="${esc(x.maps)}" target="_blank" rel="noopener">Google Maps</a>`:""}</div></div>`).join(""):'<div class="status">No results yet.</div>';
+}
+function makeExportId(){const d=new Date();return "PHCF-"+d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+"-"+String(d.getHours()).padStart(2,"0")+String(d.getMinutes()).padStart(2,"0")+String(d.getSeconds()).padStart(2,"0")+"-"+Math.random().toString(36).slice(2,7).toUpperCase();}
+function downloadExcel(){
+ if(!allResults.length){alert("Search first.");return;}
+ const version=document.getElementById("exportVersion").value.trim()||"v1.0",batch=document.getElementById("batchName").value.trim()||"Prayagraj Hospital & Clinic Finder",id=makeExportId(),dt=new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata"}),cat=document.getElementById("category").selectedOptions[0].text,area=document.getElementById("area").value,kw=document.getElementById("keyword").value.trim()||"";
+ const rows=allResults.map((x,i)=>({"No.":i+1,"Export Version":version,"Export ID":id,"Export Date / Time":dt,"Batch / Tracking Name":batch,"Search Category":cat,"Search Area":area,"Search Keyword":kw,"Result Area":x.area,"Hospital / Clinic Name":x.name,"Address":x.address,"Phone Number":x.phone,"International Phone":x.internationalPhone,"Email":x.email,"Website":x.website,"Google Maps":x.maps,"Rating":x.rating,"Review Count":x.reviews,"Business Status":x.businessStatus,"Place Types":x.types,"Latitude":x.lat,"Longitude":x.lng,"Place ID":x.id}));
+ const ws=XLSX.utils.json_to_sheet(rows);const track=[["Field","Value"],["Export Version",version],["Export ID",id],["Export Date / Time",dt],["Tracking / Batch Name",batch],["Search Category",cat],["Search Area",area],["Search Keyword",kw||"(none)"],["Unique Results",allResults.length],["Results With Phone",allResults.filter(x=>x.phone||x.internationalPhone).length],["Results With Website",allResults.filter(x=>x.website).length],["Public Email Found",allResults.filter(x=>x.email).length]];
+ const tws=XLSX.utils.aoa_to_sheet(track);ws["!cols"]=Array(23).fill({wch:20});tws["!cols"]=[{wch:28},{wch:55}];
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Hospital Clinic Data");XLSX.utils.book_append_sheet(wb,tws,"Export Tracking");
+ XLSX.writeFile(wb,`prayagraj_hospital_clinic_${version.replace(/[^a-zA-Z0-9._-]/g,"_")}_${id}.xlsx`);
+}
+loadKey();
+</script>
+</body>
+</html>
