@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tissue Manufacturer Finder — Prayagraj</title>
+  <style>
+    :root { font-family: Arial, sans-serif; color: #172033; background: #f4f7fb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { background: #173b67; color: white; padding: 26px 18px; }
+    header h1 { margin: 0 0 8px; font-size: clamp(23px, 4vw, 34px); }
+    header p { margin: 0; color: #e2ebf8; line-height: 1.5; }
+    main { max-width: 1150px; margin: 22px auto; padding: 0 14px 40px; }
+    .panel { background: white; border: 1px solid #dce4ef; border-radius: 14px; padding: 18px; margin-bottom: 16px; box-shadow: 0 3px 12px #142b4b0a; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 13px; }
+    label { display: block; font-weight: 700; margin-bottom: 7px; font-size: 14px; }
+    input, select, button { font: inherit; }
+    input, select { width: 100%; padding: 11px; border: 1px solid #c7d2e1; border-radius: 8px; background: white; }
+    button { border: 0; border-radius: 8px; padding: 11px 15px; font-weight: 700; cursor: pointer; }
+    .primary { background: #1769aa; color: white; }
+    .secondary { background: #e8eef6; color: #18385e; }
+    .danger { background: #fff0ed; color: #9b2c1e; }
+    .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 15px; }
+    .note { color: #526176; font-size: 13px; line-height: 1.5; }
+    #status { margin-top: 13px; padding: 11px; border-radius: 8px; background: #eef4fb; line-height: 1.45; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 850px; }
+    th, td { padding: 11px 10px; border-bottom: 1px solid #e3e9f1; text-align: left; vertical-align: top; font-size: 14px; }
+    th { background: #f3f6fa; position: sticky; top: 0; }
+    td a { color: #1769aa; }
+    .pill { display: inline-block; background: #edf4ff; color: #24548c; border-radius: 20px; padding: 4px 8px; font-size: 12px; }
+    .small { font-size: 12px; color: #5a6677; }
+    .hidden { display: none !important; }
+    footer { color: #657286; font-size: 12px; line-height: 1.5; padding: 8px 2px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🧻 Tissue Manufacturer Finder</h1>
+  <p>Search tissue-paper manufacturers, tissue converters, wholesalers and distributors in Prayagraj and nearby districts.</p>
+</header>
+<main>
+  <section class="panel">
+    <h2 style="margin-top:0">1. Connect Google Places</h2>
+    <p class="note">Enter your Google Maps Platform API key below. For a safer public website, restrict the key to your website's HTTP referrers and enable only the APIs you need. Do not share your key publicly.</p>
+    <div class="grid">
+      <div style="grid-column:1/-1">
+        <label for="apiKey">Google API key</label>
+        <input id="apiKey" type="password" autocomplete="off" placeholder="Paste your Google API key here">
+      </div>
+    </div>
+    <p class="note">This page uses Google's Places API (New) via browser requests. Your key needs Places API (New) enabled, appropriate website restrictions, and any required billing setup. If your project only has the legacy Places API enabled, enable Places API (New) or adapt the code.</p>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-top:0">2. Search businesses</h2>
+    <div class="grid">
+      <div>
+        <label for="area">Area</label>
+        <select id="area">
+          <option value="Prayagraj, Uttar Pradesh, India">Prayagraj</option>
+          <option value="Kaushambi, Uttar Pradesh, India">Kaushambi</option>
+          <option value="Pratapgarh, Uttar Pradesh, India">Pratapgarh</option>
+          <option value="Varanasi, Uttar Pradesh, India">Varanasi</option>
+          <option value="Mirzapur, Uttar Pradesh, India">Mirzapur</option>
+          <option value="Jaunpur, Uttar Pradesh, India">Jaunpur</option>
+          <option value="Uttar Pradesh, India">All Uttar Pradesh (broad search)</option>
+        </select>
+      </div>
+      <div>
+        <label for="category">Business type</label>
+        <select id="category">
+          <option value="all">All tissue-related businesses</option>
+          <option value="manufacturer">Manufacturers / factories</option>
+          <option value="wholesaler">Wholesalers / distributors</option>
+          <option value="converter">Tissue converting / paper products</option>
+        </select>
+      </div>
+      <div>
+        <label for="extra">Extra search term (optional)</label>
+        <input id="extra" placeholder="e.g. jumbo rolls, napkins">
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="searchBtn">Search businesses</button>
+      <button class="secondary" id="exportBtn">Download Excel-compatible CSV</button>
+      <button class="secondary" id="jsonBtn">Download JSON backup</button>
+      <button class="danger" id="clearBtn">Clear results</button>
+    </div>
+    <div id="status" role="status">Ready. Add your API key and choose an area, then press Search businesses.</div>
+    <p class="note">Google Places returns businesses matching its listings, not a guaranteed complete register of factories. Search uses several related phrases and removes duplicates. Some businesses may be suppliers rather than actual manufacturers; verify directly before relying on the classification.</p>
+  </section>
+
+  <section class="panel">
+    <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+      <h2 style="margin:0">3. Results <span id="count" class="pill">0 businesses</span></h2>
+      <input id="filter" style="max-width:330px" placeholder="Filter visible results by name, area or product">
+    </div>
+    <div class="table-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr>
+          <th>Business name</th><th>Address</th><th>Phone</th><th>Website</th><th>Category / verification</th><th>Google Maps</th>
+        </tr></thead>
+        <tbody id="results">
+          <tr><td colspan="6">No results yet. Run a search to begin.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <footer>
+    Privacy and data note: this page keeps the results in the current browser session only. It does not upload your exported spreadsheet to a server. The Google API key is sent to Google to make the searches. Public business listings can be incomplete or outdated. Always check the business directly.
+  </footer>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let businesses = [];
+  const terms = {
+    all: [
+      "tissue paper manufacturer", "tissue paper factory", "paper napkin manufacturer",
+      "facial tissue manufacturer", "toilet roll manufacturer", "kitchen tissue roll manufacturer",
+      "tissue paper wholesaler", "paper tissue supplier"
+    ],
+    manufacturer: [
+      "tissue paper manufacturer", "tissue paper factory", "paper napkin manufacturer",
+      "toilet roll manufacturer", "facial tissue manufacturer", "tissue paper converting factory"
+    ],
+    wholesaler: [
+      "tissue paper wholesaler", "paper napkin wholesaler", "tissue paper distributor",
+      "disposable paper products wholesaler"
+    ],
+    converter: [
+      "tissue paper converting", "paper napkin manufacturer", "paper products manufacturer",
+      "tissue jumbo roll supplier", "paper roll converter"
+    ]
+  };
+
+  function setStatus(message) { $("status").textContent = message; }
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, c => ({
+      "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+    }[c]));
+  }
+  function normalize(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+  function mapsUrl(place) {
+    if (place.googleMapsUri) return place.googleMapsUri;
+    return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(
+      [place.displayName?.text, place.formattedAddress].filter(Boolean).join(" ")
+    );
+  }
+  function render() {
+    const query = $("filter").value.trim().toLowerCase();
+    const shown = businesses.filter(b => [
+      b.name, b.address, b.category, b.phone, b.website
+    ].join(" ").toLowerCase().includes(query));
+    $("count").textContent = `${businesses.length} businesses`;
+    if (!shown.length) {
+      $("results").innerHTML = `<tr><td colspan="6">${businesses.length ? "No matching results for this filter." : "No results yet. Run a search to begin."}</td></tr>`;
+      return;
+    }
+    $("results").innerHTML = shown.map(b => `<tr>
+      <td><strong>${escapeHtml(b.name || "Name not provided")}</strong></td>
+      <td>${escapeHtml(b.address || "Not listed")}</td>
+      <td>${b.phone ? `<a href="tel:${escapeHtml(b.phone)}">${escapeHtml(b.phone)}</a>` : "Not listed"}</td>
+      <td>${b.website ? `<a href="${escapeHtml(b.website)}" target="_blank" rel="noopener">Open website</a>` : "Not listed"}</td>
+      <td>${escapeHtml(b.category || "Tissue-related listing")}<br><span class="small">Manufacturing status: verify directly</span></td>
+      <td><a href="${escapeHtml(b.maps)}" target="_blank" rel="noopener">Open map</a></td>
+    </tr>`).join("");
+  }
+
+  async function placesSearch(apiKey, textQuery) {
+    const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.googleMapsUri,places.primaryType,places.types"
+      },
+      body: JSON.stringify({ textQuery, pageSize: 20, languageCode: "en", regionCode: "IN" })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const msg = data.error?.message || `Google Places request failed (${response.status})`;
+      throw new Error(msg);
+    }
+    return data.places || [];
+  }
+
+  $("searchBtn").addEventListener("click", async () => {
+    const apiKey = $("apiKey").value.trim();
+    if (!apiKey) {
+      setStatus("Please paste your Google API key first.");
+      $("apiKey").focus();
+      return;
+    }
+    const area = $("area").value;
+    const category = $("category").value;
+    const extra = $("extra").value.trim();
+    const queries = terms[category].map(t => `${t} in ${area}`);
+    if (extra) queries.unshift(`${extra} in ${area}`);
+    $("searchBtn").disabled = true;
+    setStatus(`Searching ${area}. This may take a little while; Google may bill for API usage.`);
+    let added = 0, errors = [];
+    const seen = new Set(businesses.map(b => b.id || normalize(b.name) + normalize(b.address)));
+    try {
+      for (let i = 0; i < queries.length; i++) {
+        setStatus(`Searching ${i + 1} of ${queries.length}: ${queries[i]}`);
+        try {
+          const places = await placesSearch(apiKey, queries[i]);
+          for (const p of places) {
+            const name = p.displayName?.text || "";
+            const address = p.formattedAddress || "";
+            const key = p.id || normalize(name) + normalize(address);
+            if (!name || seen.has(key)) continue;
+            seen.add(key);
+            const types = (p.types || []).join(", ");
+            businesses.push({
+              id: p.id || "",
+              name,
+              address,
+              phone: p.nationalPhoneNumber || p.internationalPhoneNumber || "",
+              website: p.websiteUri || "",
+              maps: mapsUrl(p),
+              category: `${p.primaryType || "Tissue-related search result"}${types ? " (" + types + ")" : ""}`,
+              sourceQuery: queries[i],
+              email: "",
+              manufacturingStatus: "Unverified — contact business"
+            });
+            added++;
+          }
+        } catch (err) {
+          errors.push(`${queries[i]}: ${err.message}`);
+        }
+      }
+      render();
+      if (added > 0) {
+        setStatus(`Finished. Added ${added} new businesses; ${businesses.length} total. Check the names and contact each company to confirm it manufactures tissue products.`);
+      } else if (errors.length) {
+        setStatus(`No new results were added. First error: ${errors[0]}. Check API key, Places API (New), billing, and API key website restrictions.`);
+      } else {
+        setStatus(`Search completed. No new businesses found for these phrases. Try another area or search term.`);
+      }
+      if (errors.length && added > 0) {
+        setStatus($("status").textContent + ` ${errors.length} search phrase(s) failed; the first error was: ${errors[0]}`);
+      }
+    } finally {
+      $("searchBtn").disabled = false;
+    }
+  });
+
+  function csvEscape(v) { return '"' + String(v ?? "").replace(/"/g, '""') + '"'; }
+  function download(filename, content, type) {
+    const blob = new Blob(["\uFEFF", content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+  $("exportBtn").addEventListener("click", () => {
+    if (!businesses.length) { setStatus("There are no results to export yet. Run a search first."); return; }
+    const headers = ["Business Name","Address","Phone","Email (not provided by Places)","Website","Category / Place Type","Manufacturing Status","Google Maps URL","Search Phrase"];
+    const rows = businesses.map(b => [b.name,b.address,b.phone,b.email,b.website,b.category,b.manufacturingStatus,b.maps,b.sourceQuery]);
+    const csv = [headers, ...rows].map(row => row.map(csvEscape).join(",")).join("\r\n");
+    download("Prayagraj_Tissue_Businesses.csv", csv, "text/csv;charset=utf-8;");
+    setStatus("CSV downloaded. Open it in Excel, then use Save As to save an .xlsx workbook.");
+  });
+  $("jsonBtn").addEventListener("click", () => {
+    if (!businesses.length) { setStatus("There are no results to export yet. Run a search first."); return; }
+    download("Prayagraj_Tissue_Businesses.json", JSON.stringify(businesses, null, 2), "application/json;charset=utf-8;");
+    setStatus("JSON backup downloaded.");
+  });
+  $("clearBtn").addEventListener("click", () => {
+    businesses = [];
+    render();
+    setStatus("Results cleared from this page.");
+  });
+  $("filter").addEventListener("input", render);
+  render();
+})();
+</script>
+</body>
+</html>
