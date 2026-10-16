@@ -1,0 +1,282 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gloves Manufacturer & Distributor Finder</title>
+<style>
+body{margin:0;background:#f3f6fa;color:#172033;font:16px Arial,sans-serif}
+header{background:#123b68;color:white;padding:24px}
+main{max-width:1100px;margin:auto;padding:16px}
+.panel{background:white;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px #0001}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+label{display:block;font-weight:bold;font-size:14px;margin-bottom:6px}
+input,select,button{box-sizing:border-box;width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}
+button{cursor:pointer;font-weight:bold}
+.primary{background:#1769aa;color:white;border:0}
+.secondary{background:#e8eff7;color:#163a5e;border:0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.actions button{width:auto}
+.note{font-size:13px;color:#58677a;line-height:1.5}
+#status{font-weight:bold;margin-top:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;margin-top:14px}
+.company{border:1px solid #dce4ed;border-radius:10px;padding:14px;overflow-wrap:anywhere}
+.company h3{margin:8px 0}
+.company p{font-size:14px;line-height:1.45}
+.tag{display:inline-block;background:#e8f3ff;color:#14568b;padding:5px 8px;border-radius:20px;font-size:12px}
+.empty{padding:25px;color:#657286;text-align:center}
+a{color:#075ca8}
+@media(max-width:520px){.panel{padding:13px}.actions button{flex:1}}
+</style>
+</head>
+<body>
+<header>
+<h1>Gloves Manufacturer & Distributor Finder</h1>
+<p>Find glove businesses in Noida, Prayagraj, Varanasi (Banaras) and Lucknow.</p>
+</header>
+
+    
+<main>
+<section class="panel">
+<div class="grid">
+<div>
+<label for="apiKey">Google Places API key</label>
+<input id="apiKey" type="password" placeholder="Paste your existing API key">
+</div>
+<div>
+<label for="city">City</label>
+<select id="city">
+<option>Noida</option>
+<option>Prayagraj</option>
+<option>Varanasi</option>
+<option>Lucknow</option>
+<option>All four cities</option>
+</select>
+</div>
+<div>
+<label for="category">Glove type</label>
+<select id="category">
+<option value="all">All glove types</option>
+<option value="medical">Medical / examination / surgical</option>
+<option value="nitrile">Nitrile / latex</option>
+<option value="industrial">Industrial safety</option>
+<option value="household">Household rubber</option>
+</select>
+</div>
+<div>
+<label for="kind">Business type</label>
+<select id="kind">
+<option value="manufacturers">Manufacturers first</option>
+<option value="both">Manufacturers and distributors</option>
+<option value="distributors">Distributors / wholesalers</option>
+</select>
+</div>
+</div>
+
+<div class="actions">
+<button class="primary" id="search">Search businesses</button>
+<button class="secondary" id="export" disabled>Download CSV for Excel</button>
+<button class="secondary" id="clear">Clear results</button>
+</div>
+<div id="status" role="status"></div>
+<p class="note"><b>Setup:</b> Enable Maps JavaScript API and Places API (New) in Google Cloud. Billing may be required. Restrict your API key to your website before publishing.</p>
+<p class="note"><b>Important:</b> Search results are not a verified manufacturer directory. Contact each business to confirm factory ownership, phone number, MOQ and product range. Google Places may not provide email addresses.</p>
+</section>
+
+<section class="panel">
+<h2>Search results <small id="count">0 businesses</small></h2>
+<div id="results" class="cards">
+<div class="empty">Enter your API key and search to begin.</div>
+</div>
+</section>
+</main>
+
+<script>
+let records=[];
+const $=id=>document.getElementById(id);
+
+const terms={
+all:["gloves manufacturer","gloves distributor wholesaler"],
+medical:[
+"medical examination gloves manufacturer",
+"surgical gloves manufacturer",
+"medical gloves wholesaler"
+],
+nitrile:[
+"nitrile gloves manufacturer",
+"latex gloves manufacturer",
+"nitrile gloves distributor"
+],
+industrial:[
+"industrial safety gloves manufacturer",
+"industrial hand gloves wholesaler"
+],
+household:[
+"rubber household gloves manufacturer",
+"household rubber gloves distributor"
+]
+};
+
+function esc(s){
+return String(s||"").replace(/[&<>"']/g,c=>({
+"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+}[c]));
+}
+
+function classify(name,types,term){
+let s=(name+" "+(types||[]).join(" ")+" "+term).toLowerCase();
+if(/manufacturer|manufacturing|factory|industries/.test(s))
+return "Potential manufacturer — verify";
+if(/wholesale|distributor|trading|traders|supplier|medical|surgical/.test(s))
+return "Potential distributor / supplier — verify";
+return "Business listing — verify";
+}
+
+function render(){
+$("count").textContent=records.length+" businesses";
+$("export").disabled=!records.length;
+
+if(!records.length){
+$("results").innerHTML='<div class="empty">No results yet. Run a search above.</div>';
+return;
+}
+
+$("results").innerHTML=records.map(r=>`
+<article class="company">
+<span class="tag">${esc(r.type)}</span>
+<h3>${esc(r.name||"Name not listed")}</h3>
+<p><b>City:</b> ${esc(r.city)}</p>
+<p><b>Address:</b> ${esc(r.address||"Not listed")}</p>
+<p><b>Phone:</b> ${r.phone?`<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>`:"Not listed"}</p>
+<p><b>Website:</b> ${r.website?`<a href="${esc(r.website)}" target="_blank" rel="noopener">Open website</a>`:"Not listed"}</p>
+<p><b>Search term:</b> ${esc(r.term)}</p>
+</article>`).join("");
+}
+
+async function findCity(Place,city,cat,kind){
+let qs=terms[cat]||terms.all;
+
+if(kind==="manufacturers")
+qs=qs.filter(x=>x.includes("manufacturer"));
+
+if(kind==="distributors")
+qs=qs.filter(x=>/wholesaler|distributor/.test(x));
+
+if(!qs.length) qs=terms[cat]||terms.all;
+
+let found=[];
+
+for(let term of qs){
+let response=await Place.searchByText({
+textQuery:`${term} in ${city}, Uttar Pradesh, India`,
+fields:[
+"displayName","formattedAddress","nationalPhoneNumber",
+"internationalPhoneNumber","websiteURI","types","id"
+],
+maxResultCount:20
+});
+
+for(let p of (response.places||[])){
+let name=p.displayName?.text||"";
+let key=p.id||name+"|"+p.formattedAddress;
+
+if(!found.some(x=>x.key===key)){
+found.push({
+key,
+name,
+city,
+address:p.formattedAddress||"",
+phone:p.nationalPhoneNumber||p.internationalPhoneNumber||"",
+website:p.websiteURI||"",
+type:classify(name,p.types,term),
+term
+});
+}
+}
+}
+return found;
+}
+
+$("search").onclick=async()=>{
+let key=$("apiKey").value.trim();
+
+if(!key){
+$("status").textContent="Paste your Google Places API key first.";
+return;
+}
+
+$("search").disabled=true;
+records=[];
+render();
+$("status").textContent="Loading Google Places…";
+
+try{
+if(!window.google?.maps?.importLibrary){
+let s=document.createElement("script");
+s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(key)+"&v=weekly";
+s.async=true;
+document.head.appendChild(s);
+
+await new Promise((ok,no)=>{
+s.onload=ok;
+s.onerror=()=>no(Error("Could not load Google Maps. Check your key and enabled APIs."));
+});
+}
+
+let {Place}=await google.maps.importLibrary("places");
+
+let cities=$("city").value==="All four cities"
+?["Noida","Prayagraj","Varanasi","Lucknow"]
+:[$("city").value];
+
+for(let city of cities){
+$("status").textContent="Searching "+city+"…";
+records.push(...await findCity(Place,city,$("category").value,$("kind").value));
+}
+
+records.sort((a,b)=>
+(a.type.startsWith("Potential manufacturer")?-1:1)-
+(b.type.startsWith("Potential manufacturer")?-1:1) ||
+a.city.localeCompare(b.city) ||
+a.name.localeCompare(b.name)
+);
+
+render();
+$("status").textContent="Finished: "+records.length+
+" unique listings. Verify manufacturer status and contact details before ordering.";
+
+}catch(e){
+$("status").textContent="Search failed: "+(e.message||e)+
+". Check API key, billing, enabled APIs and restrictions.";
+}finally{
+$("search").disabled=false;
+}
+};
+
+$("export").onclick=()=>{
+let rows=[
+["Business name","City","Classification (unverified)","Address","Phone","Website","Search term"],
+...records.map(r=>[r.name,r.city,r.type,r.address,r.phone,r.website,r.term])
+];
+
+let csv="\uFEFF"+rows.map(row=>
+row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")
+).join("\r\n");
+
+let url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+let a=document.createElement("a");
+a.href=url;
+a.download="gloves_manufacturer_distributor_finder.csv";
+a.click();
+URL.revokeObjectURL(url);
+};
+
+$("clear").onclick=()=>{
+records=[];
+render();
+$("status").textContent="Results cleared.";
+};
+</script>
+</body>
+</html>
