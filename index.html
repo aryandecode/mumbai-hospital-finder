@@ -1,49 +1,56 @@
 
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gloves Manufacturer & Distributor Finder</title>
+
 <style>
-body{margin:0;background:#f3f6fa;color:#172033;font:16px Arial,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:#f3f6fa;color:#172033;font-family:Arial,sans-serif}
 header{background:#123b68;color:white;padding:24px}
+header h1{font-size:clamp(24px,4vw,36px)}
+header p{line-height:1.5}
 main{max-width:1100px;margin:auto;padding:16px}
 .panel{background:white;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px #0001}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
 label{display:block;font-weight:bold;font-size:14px;margin-bottom:6px}
-input,select,button{box-sizing:border-box;width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}
+input,select,button{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}
 button{cursor:pointer;font-weight:bold}
 .primary{background:#1769aa;color:white;border:0}
 .secondary{background:#e8eff7;color:#163a5e;border:0}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .actions button{width:auto}
 .note{font-size:13px;color:#58677a;line-height:1.5}
-#status{font-weight:bold;margin-top:12px}
+#status{font-weight:bold;line-height:1.5;margin-top:12px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;margin-top:14px}
 .company{border:1px solid #dce4ed;border-radius:10px;padding:14px;overflow-wrap:anywhere}
-.company h3{margin:8px 0}
-.company p{font-size:14px;line-height:1.45}
+.company h3{margin:8px 0;font-size:19px}
+.company p{font-size:14px;line-height:1.5}
 .tag{display:inline-block;background:#e8f3ff;color:#14568b;padding:5px 8px;border-radius:20px;font-size:12px}
 .empty{padding:25px;color:#657286;text-align:center}
 a{color:#075ca8}
 @media(max-width:520px){.panel{padding:13px}.actions button{flex:1}}
 </style>
 </head>
+
 <body>
 <header>
-<h1>Gloves Manufacturer & Distributor Finder</h1>
-<p>Find glove businesses in Noida, Prayagraj, Varanasi (Banaras) and Lucknow.</p>
+<h1>Gloves Manufacturer &amp; Distributor Finder</h1>
+<p>Find glove businesses in Noida, Prayagraj, Varanasi (Banaras) and Lucknow. Manufacturer-related searches are prioritised.</p>
 </header>
 
-    
 <main>
 <section class="panel">
 <div class="grid">
+
 <div>
 <label for="apiKey">Google Places API key</label>
-<input id="apiKey" type="password" placeholder="Paste your existing API key">
+<input id="apiKey" type="password" placeholder="Paste your existing API key" autocomplete="off">
 </div>
+
 <div>
 <label for="city">City</label>
 <select id="city">
@@ -54,6 +61,7 @@ a{color:#075ca8}
 <option>All four cities</option>
 </select>
 </div>
+
 <div>
 <label for="category">Glove type</label>
 <select id="category">
@@ -64,6 +72,7 @@ a{color:#075ca8}
 <option value="household">Household rubber</option>
 </select>
 </div>
+
 <div>
 <label for="kind">Business type</label>
 <select id="kind">
@@ -79,208 +88,346 @@ a{color:#075ca8}
 <button class="secondary" id="export" disabled>Download CSV for Excel</button>
 <button class="secondary" id="clear">Clear results</button>
 </div>
-<div id="status" role="status"></div>
+
+<div id="status" role="status">Ready to search.</div>
+
 <p class="note"><b>Setup:</b> Enable Maps JavaScript API and Places API (New) in Google Cloud. Billing may be required. Restrict your API key to your website before publishing.</p>
-<p class="note"><b>Important:</b> Search results are not a verified manufacturer directory. Contact each business to confirm factory ownership, phone number, MOQ and product range. Google Places may not provide email addresses.</p>
+
+<p class="note"><b>Important:</b> Google Places does not verify that a business owns a factory. Confirm manufacturer status, contact details, MOQ and products directly. Email addresses may not be available.</p>
 </section>
 
 <section class="panel">
-<h2>Search results <small id="count">0 businesses</small></h2>
+<h2>Search results — <span id="count">0 businesses</span></h2>
 <div id="results" class="cards">
-<div class="empty">Enter your API key and search to begin.</div>
+<div class="empty">Enter your API key and tap Search businesses.</div>
 </div>
 </section>
 </main>
 
 <script>
-let records=[];
-const $=id=>document.getElementById(id);
+"use strict";
 
-const terms={
-all:["gloves manufacturer","gloves distributor wholesaler"],
-medical:[
-"medical examination gloves manufacturer",
-"surgical gloves manufacturer",
-"medical gloves wholesaler"
-],
-nitrile:[
-"nitrile gloves manufacturer",
-"latex gloves manufacturer",
-"nitrile gloves distributor"
-],
-industrial:[
-"industrial safety gloves manufacturer",
-"industrial hand gloves wholesaler"
-],
-household:[
-"rubber household gloves manufacturer",
-"household rubber gloves distributor"
-]
+let records = [];
+
+const $ = id => document.getElementById(id);
+
+const searchTerms = {
+  all: [
+    "gloves manufacturer",
+    "gloves distributor wholesaler",
+    "hand gloves supplier"
+  ],
+  medical: [
+    "medical examination gloves manufacturer",
+    "surgical gloves manufacturer",
+    "medical gloves wholesaler"
+  ],
+  nitrile: [
+    "nitrile gloves manufacturer",
+    "latex gloves manufacturer",
+    "nitrile gloves distributor"
+  ],
+  industrial: [
+    "industrial safety gloves manufacturer",
+    "industrial hand gloves wholesaler"
+  ],
+  household: [
+    "rubber household gloves manufacturer",
+    "household rubber gloves distributor"
+  ]
 };
 
-function esc(s){
-return String(s||"").replace(/[&<>"']/g,c=>({
-"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-}[c]));
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
 }
 
-function classify(name,types,term){
-let s=(name+" "+(types||[]).join(" ")+" "+term).toLowerCase();
-if(/manufacturer|manufacturing|factory|industries/.test(s))
-return "Potential manufacturer — verify";
-if(/wholesale|distributor|trading|traders|supplier|medical|surgical/.test(s))
-return "Potential distributor / supplier — verify";
-return "Business listing — verify";
+/*
+  Google Places JavaScript API Place.displayName is a STRING.
+  Do not assume it is always an object containing .text.
+*/
+function getBusinessName(place) {
+  if (typeof place.displayName === "string") {
+    return place.displayName.trim();
+  }
+
+  // Defensive fallbacks for other response formats.
+  if (place.displayName && typeof place.displayName.text === "string") {
+    return place.displayName.text.trim();
+  }
+
+  if (typeof place.name === "string" &&
+      !place.name.startsWith("places/")) {
+    return place.name.trim();
+  }
+
+  return "";
 }
 
-function render(){
-$("count").textContent=records.length+" businesses";
-$("export").disabled=!records.length;
+function classifyBusiness(name, term) {
+  const text = (name + " " + term).toLowerCase();
 
-if(!records.length){
-$("results").innerHTML='<div class="empty">No results yet. Run a search above.</div>';
-return;
+  if (/manufacturer|manufacturing|factory/.test(text)) {
+    return "Manufacturer search result — verify";
+  }
+
+  if (/wholesaler|distributor|supplier/.test(text)) {
+    return "Distributor / supplier search result — verify";
+  }
+
+  return "Business listing — verify";
 }
 
-$("results").innerHTML=records.map(r=>`
-<article class="company">
-<span class="tag">${esc(r.type)}</span>
-<h3>${esc(r.name||"Name not listed")}</h3>
-<p><b>City:</b> ${esc(r.city)}</p>
-<p><b>Address:</b> ${esc(r.address||"Not listed")}</p>
-<p><b>Phone:</b> ${r.phone?`<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>`:"Not listed"}</p>
-<p><b>Website:</b> ${r.website?`<a href="${esc(r.website)}" target="_blank" rel="noopener">Open website</a>`:"Not listed"}</p>
-<p><b>Search term:</b> ${esc(r.term)}</p>
-</article>`).join("");
+function renderResults() {
+  $("count").textContent = records.length + " businesses";
+  $("export").disabled = records.length === 0;
+
+  if (records.length === 0) {
+    $("results").innerHTML =
+      '<div class="empty">No named businesses found yet. Try another city or glove type.</div>';
+    return;
+  }
+
+  $("results").innerHTML = records.map(record => `
+    <article class="company">
+      <span class="tag">${escapeHTML(record.type)}</span>
+      <h3>${escapeHTML(record.name)}</h3>
+      <p><b>City:</b> ${escapeHTML(record.city)}</p>
+      <p><b>Address:</b> ${escapeHTML(record.address || "Not listed")}</p>
+      <p><b>Phone:</b> ${
+        record.phone
+          ? `<a href="tel:${escapeHTML(record.phone)}">${escapeHTML(record.phone)}</a>`
+          : "Not listed"
+      }</p>
+      <p><b>Website:</b> ${
+        record.website
+          ? `<a href="${escapeHTML(record.website)}" target="_blank" rel="noopener noreferrer">Open website</a>`
+          : "Not listed"
+      }</p>
+      <p><b>Search term:</b> ${escapeHTML(record.term)}</p>
+    </article>
+  `).join("");
 }
 
-async function findCity(Place,city,cat,kind){
-let qs=terms[cat]||terms.all;
+async function searchOneCity(Place, city, category, businessType) {
+  let queries = searchTerms[category] || searchTerms.all;
 
-if(kind==="manufacturers")
-qs=qs.filter(x=>x.includes("manufacturer"));
+  if (businessType === "manufacturers") {
+    queries = queries.filter(term => term.includes("manufacturer"));
+  } else if (businessType === "distributors") {
+    queries = queries.filter(term => /wholesaler|distributor/.test(term));
+  }
 
-if(kind==="distributors")
-qs=qs.filter(x=>/wholesaler|distributor/.test(x));
+  if (queries.length === 0) {
+    queries = searchTerms[category] || searchTerms.all;
+  }
 
-if(!qs.length) qs=terms[cat]||terms.all;
+  const cityResults = [];
+  const seen = new Set();
 
-let found=[];
+  for (const term of queries) {
+    const request = {
+      textQuery: `${term} in ${city}, Uttar Pradesh, India`,
+      fields: [
+        "id",
+        "displayName",
+        "formattedAddress",
+        "nationalPhoneNumber",
+        "internationalPhoneNumber",
+        "websiteURI",
+        "types"
+      ],
+      maxResultCount: 20
+    };
 
-for(let term of qs){
-let response=await Place.searchByText({
-textQuery:`${term} in ${city}, Uttar Pradesh, India`,
-fields:[
-"displayName","formattedAddress","nationalPhoneNumber",
-"internationalPhoneNumber","websiteURI","types","id"
-],
-maxResultCount:20
+    const response = await Place.searchByText(request);
+    const places = response.places || [];
+
+    for (const place of places) {
+      // Correctly read the business name.
+      const name = getBusinessName(place);
+
+      // Do not show anonymous cards with addresses and phone numbers.
+      if (!name) {
+        console.warn("Skipping Places result without a business name:", place);
+        continue;
+      }
+
+      const uniqueKey = place.id ||
+        (name + "|" + (place.formattedAddress || ""));
+
+      if (seen.has(uniqueKey)) {
+        continue;
+      }
+
+      seen.add(uniqueKey);
+
+      cityResults.push({
+        id: uniqueKey,
+        name: name,
+        city: city,
+        address: place.formattedAddress || "",
+        phone: place.nationalPhoneNumber ||
+               place.internationalPhoneNumber || "",
+        website: place.websiteURI || "",
+        type: classifyBusiness(name, term),
+        term: term
+      });
+    }
+  }
+
+  return cityResults;
+}
+
+$("search").addEventListener("click", async () => {
+  const apiKey = $("apiKey").value.trim();
+
+  if (!apiKey) {
+    $("status").textContent = "Please paste your Google Places API key first.";
+    $("apiKey").focus();
+    return;
+  }
+
+  $("search").disabled = true;
+  records = [];
+  renderResults();
+  $("status").textContent = "Connecting to Google Places…";
+
+  try {
+    if (!window.google?.maps?.importLibrary) {
+      // Load Google Maps only once.
+      if (!window.__placesScriptLoading) {
+        window.__placesScriptLoading = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+
+          script.src =
+            "https://maps.googleapis.com/maps/api/js?key=" +
+            encodeURIComponent(apiKey) +
+            "&v=weekly";
+
+          script.async = true;
+          script.onload = resolve;
+          script.onerror = () => reject(
+            new Error("Google Maps could not load. Check the API key and enabled APIs.")
+          );
+
+          document.head.appendChild(script);
+        });
+      }
+
+      await window.__placesScriptLoading;
+    }
+
+    const { Place } = await google.maps.importLibrary("places");
+
+    const cityChoice = $("city").value;
+    const cities = cityChoice === "All four cities"
+      ? ["Noida", "Prayagraj", "Varanasi", "Lucknow"]
+      : [cityChoice];
+
+    const category = $("category").value;
+    const businessType = $("kind").value;
+
+    for (const city of cities) {
+      $("status").textContent = "Searching " + city + "…";
+
+      const cityResults = await searchOneCity(
+        Place,
+        city,
+        category,
+        businessType
+      );
+
+      records.push(...cityResults);
+    }
+
+    // Remove duplicates across queries and cities.
+    const uniqueRecords = new Map();
+
+    for (const record of records) {
+      uniqueRecords.set(record.id, record);
+    }
+
+    records = Array.from(uniqueRecords.values());
+
+    records.sort((a, b) =>
+      a.city.localeCompare(b.city) ||
+      a.name.localeCompare(b.name)
+    );
+
+    renderResults();
+
+    $("status").textContent = records.length
+      ? "Finished: " + records.length +
+        " named business listings found. Verify manufacturer status before ordering."
+      : "No named businesses were returned. Check your API setup or try a different search.";
+
+  } catch (error) {
+    console.error(error);
+
+    $("status").textContent =
+      "Search failed: " + (error.message || error) +
+      ". Check your API key, billing, enabled APIs and website restrictions.";
+  } finally {
+    $("search").disabled = false;
+  }
 });
 
-for(let p of (response.places||[])){
-let name=(
-  typeof p.displayName === "string"
-    ? p.displayName
-    : p.displayName?.text
-) || p.name || "";
-let key=p.id||name+"|"+p.formattedAddress;
+$("export").addEventListener("click", () => {
+  const rows = [
+    [
+      "Business name",
+      "City",
+      "Classification (unverified)",
+      "Address",
+      "Phone",
+      "Website",
+      "Search term"
+    ],
+    ...records.map(record => [
+      record.name,
+      record.city,
+      record.type,
+      record.address,
+      record.phone,
+      record.website,
+      record.term
+    ])
+  ];
 
-if(!found.some(x=>x.key===key)){
-found.push({
-key,
-name,
-city,
-address:p.formattedAddress||"",
-phone:p.nationalPhoneNumber||p.internationalPhoneNumber||"",
-website:p.websiteURI||"",
-type:classify(name,p.types,term),
-term
+  const csv = "\uFEFF" + rows.map(row =>
+    row.map(value =>
+      '"' + String(value ?? "").replace(/"/g, '""') + '"'
+    ).join(",")
+  ).join("\r\n");
+
+  const blob = new Blob([csv], {
+    type: "text/csv;charset=utf-8;"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = "gloves_manufacturer_distributor_finder.csv";
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
 });
-}
-}
-}
-return found;
-}
 
-$("search").onclick=async()=>{
-let key=$("apiKey").value.trim();
-
-if(!key){
-$("status").textContent="Paste your Google Places API key first.";
-return;
-}
-
-$("search").disabled=true;
-records=[];
-render();
-$("status").textContent="Loading Google Places…";
-
-try{
-if(!window.google?.maps?.importLibrary){
-let s=document.createElement("script");
-s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(key)+"&v=weekly";
-s.async=true;
-document.head.appendChild(s);
-
-await new Promise((ok,no)=>{
-s.onload=ok;
-s.onerror=()=>no(Error("Could not load Google Maps. Check your key and enabled APIs."));
+$("clear").addEventListener("click", () => {
+  records = [];
+  renderResults();
+  $("status").textContent = "Results cleared.";
 });
-}
-
-let {Place}=await google.maps.importLibrary("places");
-
-let cities=$("city").value==="All four cities"
-?["Noida","Prayagraj","Varanasi","Lucknow"]
-:[$("city").value];
-
-for(let city of cities){
-$("status").textContent="Searching "+city+"…";
-records.push(...await findCity(Place,city,$("category").value,$("kind").value));
-}
-
-records.sort((a,b)=>
-(a.type.startsWith("Potential manufacturer")?-1:1)-
-(b.type.startsWith("Potential manufacturer")?-1:1) ||
-a.city.localeCompare(b.city) ||
-a.name.localeCompare(b.name)
-);
-
-render();
-$("status").textContent="Finished: "+records.length+
-" unique listings. Verify manufacturer status and contact details before ordering.";
-
-}catch(e){
-$("status").textContent="Search failed: "+(e.message||e)+
-". Check API key, billing, enabled APIs and restrictions.";
-}finally{
-$("search").disabled=false;
-}
-};
-
-$("export").onclick=()=>{
-let rows=[
-["Business name","City","Classification (unverified)","Address","Phone","Website","Search term"],
-...records.map(r=>[r.name,r.city,r.type,r.address,r.phone,r.website,r.term])
-];
-
-let csv="\uFEFF"+rows.map(row=>
-row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")
-).join("\r\n");
-
-let url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
-let a=document.createElement("a");
-a.href=url;
-a.download="gloves_manufacturer_distributor_finder.csv";
-a.click();
-URL.revokeObjectURL(url);
-};
-
-$("clear").onclick=()=>{
-records=[];
-render();
-$("status").textContent="Results cleared.";
-};
 </script>
 </body>
 </html>
