@@ -178,7 +178,11 @@ maxResultCount:20
 });
 
 for(let p of (response.places||[])){
-let name=p.displayName?.text||"";
+let name=(
+  typeof p.displayName === "string"
+    ? p.displayName
+    : p.displayName?.text
+) || p.name || "";
 let key=p.id||name+"|"+p.formattedAddress;
 
 if(!found.some(x=>x.key===key)){
